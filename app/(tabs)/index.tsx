@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, FlatList, Alert, SafeAreaView } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 interface ShoppingItem {
   id: string;
@@ -13,6 +14,11 @@ interface ShoppingItem {
 export default function ShoppingListScreen() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [inputText, setInputText] = useState('');
+  
+  // テーマカラーを取得
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const tintColor = useThemeColor({}, 'tint');
 
   const addItem = () => {
     if (inputText.trim()) {
@@ -46,112 +52,184 @@ export default function ShoppingListScreen() {
   };
 
   const renderItem = ({ item }: { item: ShoppingItem }) => (
-    <ThemedView style={styles.itemContainer}>
+    <ThemedView style={[
+      styles.itemContainer, 
+      { 
+        shadowColor: textColor,
+        backgroundColor: backgroundColor === '#151718' ? '#1f2937' : 'rgba(255, 255, 255, 0.95)'
+      }
+    ]}>
       <TouchableOpacity 
         style={styles.itemContent}
         onPress={() => toggleItem(item.id)}
+        activeOpacity={0.7}
       >
-        <ThemedView style={[styles.checkbox, item.completed && styles.checkboxChecked]}>
+        <ThemedView style={[
+          styles.checkbox, 
+          { borderColor: item.completed ? tintColor : (backgroundColor === '#151718' ? '#4b5563' : '#ddd') },
+          item.completed && { backgroundColor: tintColor }
+        ]}>
           {item.completed && <ThemedText style={styles.checkmark}>✓</ThemedText>}
         </ThemedView>
-        <ThemedText style={[styles.itemText, item.completed && styles.itemTextCompleted]}>
+        <ThemedText style={[
+          styles.itemText, 
+          { color: textColor },
+          item.completed && styles.itemTextCompleted
+        ]}>
           {item.name}
         </ThemedText>
       </TouchableOpacity>
       <TouchableOpacity 
         style={styles.deleteButton}
         onPress={() => deleteItem(item.id)}
+        activeOpacity={0.6}
       >
-        <ThemedText style={styles.deleteButtonText}>✕</ThemedText>
+        <ThemedText style={styles.deleteButtonText}>🗑</ThemedText>
       </TouchableOpacity>
     </ThemedView>
   );
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title">買い物リスト</ThemedText>
-      </ThemedView>
-      
-      <ThemedView style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder="商品名を入力"
-          onSubmitEditing={addItem}
-          returnKeyType="done"
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addItem}>
-          <ThemedText style={styles.addButtonText}>追加</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
-
-      <FlatList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        style={styles.list}
-        showsVerticalScrollIndicator={false}
-      />
-      
-      {items.length === 0 && (
-        <ThemedView style={styles.emptyContainer}>
-          <ThemedText style={styles.emptyText}>
-            商品を追加して買い物リストを作成しましょう
-          </ThemedText>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
+      <ThemedView style={styles.container}>
+        <ThemedView style={styles.header}>
+          <ThemedText type="title" style={styles.title}>🛒 買い物リスト</ThemedText>
+          {items.length > 0 && (
+            <ThemedText style={[styles.subtitle, { color: textColor }]}>
+              {items.filter(item => !item.completed).length} / {items.length} 個
+            </ThemedText>
+          )}
         </ThemedView>
-      )}
-    </ThemedView>
+        
+        <ThemedView style={styles.inputContainer}>
+          <TextInput
+            style={[
+              styles.input, 
+              { 
+                color: textColor, 
+                borderColor: tintColor,
+                backgroundColor: backgroundColor === '#151718' ? '#374151' : 'rgba(255, 255, 255, 0.9)'
+              }
+            ]}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="商品名を入力してください..."
+            placeholderTextColor={backgroundColor === '#151718' ? '#9ca3af' : '#999'}
+            onSubmitEditing={addItem}
+            returnKeyType="done"
+          />
+          <TouchableOpacity 
+            style={[styles.addButton, { backgroundColor: tintColor }]} 
+            onPress={addItem}
+            activeOpacity={0.8}
+          >
+            <ThemedText style={styles.addButtonText}>＋</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
+        <FlatList
+          data={items}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
+        
+        {items.length === 0 && (
+          <ThemedView style={styles.emptyContainer}>
+            <ThemedText style={styles.emptyIcon}>📝</ThemedText>
+            <ThemedText style={[styles.emptyText, { color: textColor }]}>
+              買い物リストが空です
+            </ThemedText>
+            <ThemedText style={[styles.emptySubtext, { color: textColor }]}>
+              上のフィールドに商品名を入力して追加してください
+            </ThemedText>
+          </ThemedView>
+        )}
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 30,
     alignItems: 'center',
+    paddingVertical: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
-    gap: 10,
+    marginBottom: 24,
+    gap: 12,
+    alignItems: 'center',
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderWidth: 2,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     fontSize: 16,
-    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   addButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   addButtonText: {
     color: '#fff',
+    fontSize: 20,
     fontWeight: 'bold',
   },
   list: {
     flex: 1,
   },
+  listContent: {
+    paddingBottom: 20,
+  },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   itemContent: {
     flex: 1,
@@ -159,50 +237,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    marginRight: 12,
+    width: 28,
+    height: 28,
+    borderWidth: 2.5,
+    borderRadius: 14,
+    marginRight: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
   checkmark: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   itemText: {
-    fontSize: 16,
+    fontSize: 17,
     flex: 1,
+    fontWeight: '500',
+    lineHeight: 22,
   },
   itemTextCompleted: {
     textDecorationLine: 'line-through',
-    opacity: 0.6,
+    opacity: 0.5,
   },
   deleteButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: 10,
+    marginLeft: 12,
+    borderRadius: 8,
   },
   deleteButtonText: {
-    color: '#ff3b30',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 50,
+    paddingHorizontal: 40,
+    paddingTop: 40,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 20,
   },
   emptyText: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptySubtext: {
     fontSize: 16,
     opacity: 0.6,
     textAlign: 'center',
+    lineHeight: 22,
   },
 });
