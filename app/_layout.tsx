@@ -13,7 +13,7 @@ export default function RootLayout() {
   });
 
   if (!loaded) {
-    // Async font loading only occurs in development.
+    // 非同期フォント読み込みは開発時のみ発生
     return null;
   }
 
